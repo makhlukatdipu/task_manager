@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:task_manager/data/services/api_caller.dart';
 import 'package:task_manager/data/utils/urls.dart';
+import 'package:task_manager/providers/auth_provider.dart';
+import 'package:task_manager/providers/network_provider.dart';
 import 'package:task_manager/ui/screens/login_page.dart';
 
 import '../widgets/screen_background.dart';
@@ -194,28 +197,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _signUp()async{
-    setState(() {
-      _singUpInProgress = true;
-    });
+    // setState(() {
+    //   _singUpInProgress = true;
+    // });
+    //
+    // Map<String, dynamic> requestBody = {
+    //   "email":_emailController.text,
+    //   "firstName":_firstNameController.text,
+    //   "lastName":_lastNameController.text,
+    //   "mobile":_mobileController.text,
+    //   "password":_passwordController.text,
+    // };
+    //
+    // final ApiResponse response = await ApiCaller.postRequest(
+    //   url: Urls.registrationUrl,
+    //   body: requestBody,
+    // );
+    //
+    // setState(() {
+    //   _singUpInProgress = false;
+    // });
+    //
+    // if(response.isSuccess){
+    //   _clearTextField();
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(content: Text('Sign up Success..!'),
+    //         backgroundColor: Colors.green,
+    //         duration: Duration(seconds: 2),
+    //       )
+    //   );
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginPage()));
+    //
+    // }else{
+    //   String errorMessage = 'Sign up failed';
+    //
+    //   if (response.responseData['data']?['code'] == 11000) {
+    //     errorMessage = 'This email is already registered';
+    //   }
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(content: Text(errorMessage),
+    //         backgroundColor: Colors.red,
+    //         duration: Duration(seconds: 3),
+    //       )
+    //   );
+    // }
 
-    Map<String, dynamic> requestBody = {
-      "email":_emailController.text,
-      "firstName":_firstNameController.text,
-      "lastName":_lastNameController.text,
-      "mobile":_mobileController.text,
-      "password":_passwordController.text,
-    };
-
-    final ApiResponse response = await ApiCaller.postRequest(
-      url: Urls.registrationUrl,
-      body: requestBody,
+    final networkProvider = Provider.of<NetworkProvider>(context,listen: false);
+    final result = networkProvider.register(
+        email: _emailController.text.trim(),
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        mobile: _mobileController.text.trim(),
+        password: _passwordController.text.trim()
     );
 
-    setState(() {
-      _singUpInProgress = false;
-    });
-
-    if(response.isSuccess){
+    if(result != null){
       _clearTextField();
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Sign up Success..!'),
@@ -223,21 +259,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
             duration: Duration(seconds: 2),
           )
       );
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginPage()));
+      Navigator.pop(context);
 
-    }else{
-      String errorMessage = 'Sign up failed';
-
-      if (response.responseData['data']?['code'] == 11000) {
-        errorMessage = 'This email is already registered';
+      } else{
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(networkProvider.errorMessage?? 'Something wrong'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            )
+        );
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          )
-      );
-    }
+
   }
 
   _clearTextField(){

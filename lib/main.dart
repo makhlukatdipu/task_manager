@@ -1,16 +1,20 @@
 
 import 'package:flutter/cupertino.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:task_manager/ui/controller/auth_controller.dart';
+import 'package:provider/provider.dart';
+import 'package:task_manager/providers/auth_provider.dart';
+import 'package:task_manager/providers/network_provider.dart';
+import 'package:task_manager/providers/task_provider.dart';
+
 
 import 'app.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  //WidgetsFlutterBinding.ensureInitialized();
 
-  await SharedPreferences.getInstance();
-
-  await AuthController.getUserData();
-
-  runApp(const TaskManagerApp());
+  runApp( MultiProvider(providers: [
+    ChangeNotifierProvider(create: (_)=>AuthProvider()),
+    ChangeNotifierProvider(create: (_)=>NetworkProvider()),
+    ChangeNotifierProvider(create: (_)=>TaskProvider()),
+  ],
+  child: TaskManagerApp(),));
 }

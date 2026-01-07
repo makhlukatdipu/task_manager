@@ -1,7 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:task_manager/data/services/api_caller.dart';
 import 'package:task_manager/data/utils/urls.dart';
+import 'package:task_manager/providers/auth_provider.dart';
+import 'package:task_manager/providers/network_provider.dart';
 import 'package:task_manager/ui/screens/forget_password_email_verify.dart';
 import 'package:task_manager/ui/screens/main_nav_bar_holder_screen.dart';
 import 'package:task_manager/ui/screens/sign_up_screen.dart';
@@ -136,28 +139,61 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signIn()async{
 
-    setState(() {
-      singInProgress = true;
-    });
+    final networkProvider  = Provider.of<NetworkProvider>(context,listen: false);
+    final authProvider = Provider.of<AuthProvider>(context,listen: false);
 
-    Map<String,dynamic> responseBody = {
-      "email": _emailController.text,
-      "password" : _passwordController.text,
-    };
+    final result = await networkProvider.logIn(email: _emailController.text.trim(), password: _passwordController.text);
+//     setState(() {
+//       singInProgress = true;
+//     });
+//
+//     Map<String,dynamic> responseBody = {
+//       "email": _emailController.text,
+//       "password" : _passwordController.text,
+//     };
+//
+//     final ApiResponse response = await ApiCaller.postRequest(
+//         url: Urls.logInUrl,
+//       body: responseBody,
+//     );
+//     setState(() {
+//       singInProgress = false;
+//     });
+// //print(response.responseData['data']);
+//     if(response.isSuccess){
+//
+//       UserModel model = UserModel.fromJson(response.responseData['data']);
+//        String accessToken = response.responseData['token'];
+//      await AuthController.saveUserData(model, accessToken);
+//     _clearTextField();
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text('Login Success..!'),
+//         backgroundColor: Colors.green,
+//         duration: Duration(seconds: 2),
+//       ),
+//     );
+//     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>MainNavBarHolderScreen()));
+//
+//   }else{
+//   ScaffoldMessenger.of(context).showSnackBar(
+//   SnackBar(content: Text(response.responseData['data']?? 'Invalid email & password'),
+//   backgroundColor: Colors.red,
+//   duration: Duration(seconds: 2),
+//   )
+//   );
+//   }
+// }
+//
+// _clearTextField(){
+//   _emailController.clear();
+//   _passwordController.clear();
+// }
 
-    final ApiResponse response = await ApiCaller.postRequest(
-        url: Urls.logInUrl,
-      body: responseBody,
-    );
-    setState(() {
-      singInProgress = false;
-    });
-//print(response.responseData['data']);
-    if(response.isSuccess){
+    if(result != null) {
 
-      UserModel model = UserModel.fromJson(response.responseData['data']);
-       String accessToken = response.responseData['token'];
-     await AuthController.saveUserData(model, accessToken);
+      await authProvider.saveUserData(result['user'], result['token']);
+      ApiCaller.accessToken = result['token'];
+
       _clearTextField();
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login Success..!'),
@@ -169,7 +205,7 @@ class _LoginPageState extends State<LoginPage> {
 
     }else{
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.responseData['data']?? 'Invalid email & password'),
+        SnackBar(content: Text(networkProvider.errorMessage?? 'Invalid email & password'),
           backgroundColor: Colors.red,
             duration: Duration(seconds: 2),
         )

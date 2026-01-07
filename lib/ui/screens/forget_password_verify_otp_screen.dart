@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:provider/provider.dart';
 import 'package:task_manager/ui/screens/reset_password_screen.dart';
 
+import '../../providers/network_provider.dart';
 import '../widgets/screen_background.dart';
 class ForgetPasswordVerifyOtpScreen extends StatefulWidget {
-  const ForgetPasswordVerifyOtpScreen({super.key});
+  final String email;
+  const ForgetPasswordVerifyOtpScreen({super.key, required this.email});
 
   @override
   State<ForgetPasswordVerifyOtpScreen> createState() => _ForgetPasswordVerifyOtpScreenState();
 }
 
 class _ForgetPasswordVerifyOtpScreenState extends State<ForgetPasswordVerifyOtpScreen> {
+
+  final TextEditingController _otpController = TextEditingController();
+  bool _isLoading = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,6 +44,7 @@ class _ForgetPasswordVerifyOtpScreenState extends State<ForgetPasswordVerifyOtpS
                   const SizedBox(height: 10,),
               
                   PinCodeTextField(
+                    controller: _otpController,
                     length: 6,
                     keyboardType: TextInputType.number,
                     obscureText: false,
@@ -55,12 +63,15 @@ class _ForgetPasswordVerifyOtpScreenState extends State<ForgetPasswordVerifyOtpS
                     appContext: context,
                   ),
                   const SizedBox(height: 20,),
-              
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context)=> ResetPasswordScreen()));
-                    },
-                    child: Text('Verify')
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: _isLoading
+                        ? const CircularProgressIndicator()
+                        : FilledButton(
+                      onPressed: _verifyOtp,
+                      child: const Text('Verify'),
+                    ),
                   ),
               
                   const SizedBox(height: 30,),
@@ -92,4 +103,52 @@ class _ForgetPasswordVerifyOtpScreenState extends State<ForgetPasswordVerifyOtpS
           )),
     );
   }
+
+  Future<void> _verifyOtp() async {
+    if (_otpController.text.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid 6-digit OTP')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final networkProvider =
+    Provider.of<NetworkProvider>(context, listen: false);
+
+    final result = await networkProvider.verifyOTPForPasswordRecovery(
+      email: widget.email,
+      otp: _otpController.text.trim(),
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (result['success'] == true && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(
+            email: widget.email,
+            otp: _otpController.text.trim(),
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['error'] ?? 'OTP verification failed')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
+
 }
